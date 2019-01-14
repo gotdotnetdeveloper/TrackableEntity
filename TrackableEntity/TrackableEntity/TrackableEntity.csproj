@@ -40,9 +40,14 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Class1.cs" />
-    <Compile Include="Entity.cs" />
+    <Compile Include="EntityState.cs" />
+    <Compile Include="EntityTraker.cs" />
+    <Compile Include="IEntityTraker.cs" />
+    <Compile Include="InternalEntityEntry.cs" />
+    <Compile Include="ISnapshot.cs" />
+    <Compile Include="OriginalValues.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="ReferenceEqualityComparer.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
