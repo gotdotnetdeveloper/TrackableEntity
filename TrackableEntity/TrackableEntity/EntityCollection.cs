@@ -59,21 +59,41 @@ namespace TrackableEntity
 
         protected override void ClearItems()
         {
-            //foreach (var entity in Items)
-            //{
-            //    _entityStateMonitor.OriginalDictionary[entity]
-            //}
-            
+            foreach (var entity in Items)
+            {
+                if (_entityStateMonitor.EntitySet.ContainsKey(entity))
+                {
+                    if (_entityStateMonitor.EntitySet[entity].Entity.EntityState == EntityState.New)
+                        _entityStateMonitor.EntitySet.Remove(entity);
+                    else
+                    {
+                        _entityStateMonitor.EntitySet[entity].Entity.EntityState = EntityState.Deleted;
+                    }
+                }
+            }
+
             base.ClearItems();
         }
 
         protected override void InsertItem(int index, Entity item)
         {
-            base.InsertItem(index, item);
+            
+            if (! _entityStateMonitor.EntitySet.ContainsKey(item))
+            {
+                item.EntityState = EntityState.New;
+                _entityStateMonitor.EntitySet.Add(item,null);
+            }
+
+                base.InsertItem(index, item);
         }
 
         protected override void RemoveItem(int index)
         {
+            var item = this[index];
+            if (_entityStateMonitor.EntitySet.ContainsKey(item))
+            {
+                item.EntityState = EntityState.Deleted;
+            }
             base.RemoveItem(index);
         }
 
@@ -81,10 +101,6 @@ namespace TrackableEntity
         {
             base.SetItem(index, item);
         }
-
-
-     
-
        
     }
 }

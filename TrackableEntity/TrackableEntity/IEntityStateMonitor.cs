@@ -16,17 +16,17 @@ namespace TrackableEntity
         /// Список ВСЕХ  сущьностей добавленных.
         /// </summary>
         /// <returns></returns>
-        ICollection<object> GetAddedItems();
+        ICollection<Entity> GetAddedItems();
         /// <summary>
         /// Список ВСЕХ сущьностей измененных.
         /// </summary>
         /// <returns></returns>
-        ICollection<object> GetChangedItems();
+        ICollection<Entity> GetChangedItems();
         /// <summary>
         /// Список ВСЕХ сущьностей удаленных.
         /// </summary>
         /// <returns></returns>
-        ICollection<object> GetDeletedItems();
+        ICollection<Entity> GetDeletedItems();
 
         /// <summary>
         /// Ecть ли изменения. 
@@ -40,7 +40,7 @@ namespace TrackableEntity
         /// Делает фотографию всех сущьностей
         /// </summary>
         /// <param name="rootEntity">Узел графа</param>
-        void ApplayGraph(object rootEntity);
+        void ApplayGraph(Entity rootEntity);
 
         /*
          Внутри будем хранить 2 коллекции ВСЕХ энтити

@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 
 namespace TrackableEntity
 {
@@ -9,28 +11,29 @@ namespace TrackableEntity
     /// </summary>
     public class EntityStateMonitor : IEntityStateMonitor
     {
-        //1) Original(object referense, int TrakerHashcode() - valueСостояние для трекера)
-        public readonly Dictionary<Entity, object> OriginalDictionary = new Dictionary<Entity, object>(ReferenceEqualityComparer.Instance);
-
-        //2) Current(object referense, valueСостояние для трекера, EntityState(Add/remove/IsChanges/NonChanges) )
         /// <summary>
-        /// Добавленные сущьности 
+        /// Все отслеживаемые сущьности
         /// </summary>
-        public readonly Dictionary<Entity, object> NewDictionary = new Dictionary<Entity, object>(ReferenceEqualityComparer.Instance);
+        public readonly Dictionary<Entity, EntityInfo> EntitySet = new Dictionary<Entity, EntityInfo>(ReferenceEqualityComparer.Instance);
 
-        public ICollection<object> GetAddedItems()
+        /// <summary>
+        /// Закешированный справочник типов. (Чтоб рефрексии было поменьше)
+        /// </summary>
+        public readonly Dictionary<Type, PropertyInfo[]> PropertyInfoDictionary = new Dictionary<Type, PropertyInfo[]>();
+
+        public ICollection<Entity> GetAddedItems()
         {
-            throw new NotImplementedException();
+           return EntitySet.Keys.Where(x => x.EntityState == EntityState.New).ToList();
         }
 
-        public ICollection<object> GetChangedItems()
+        public ICollection<Entity> GetChangedItems()
         {
-            throw new NotImplementedException();
+            return EntitySet.Keys.Where(x => x.EntityState == EntityState.Modified).ToList();
         }
 
-        public ICollection<object> GetDeletedItems()
+        public ICollection<Entity> GetDeletedItems()
         {
-            throw new NotImplementedException();
+            return EntitySet.Keys.Where(x => x.EntityState == EntityState.Deleted).ToList();
         }
 
         /// <summary>
@@ -39,10 +42,75 @@ namespace TrackableEntity
         public bool IsChanges { get; set; }
 
         /// <summary>
+        /// Добавить Для отслеживания.
+        /// </summary>
+        /// <typeparam name="T">Тип</typeparam>
+        /// <param name="entityCollection"> Коллекция экземпляров.</param>
+        public void Aplay<T>(IEnumerable<Entity> entityCollection) where T : class
+        {
+            var type = typeof(T);
+            EnssureCreateType(type);
+            foreach (var entity in entityCollection)
+            {
+                AplayInner(entity, type);
+            }
+        }
+        /// <summary>
+        /// Убедимся, что тип создан в кеше.
+        /// </summary>
+        /// <param name="type">Тип</param>
+        private void EnssureCreateType(Type type)
+        {
+            if (!PropertyInfoDictionary.ContainsKey(type))
+            {
+                PropertyInfoDictionary[type] = type.GetProperties(BindingFlags.Public)
+                    .Where(x => x.CanWrite && x.CanRead).ToArray();
+            }
+        }
+        /// <summary>
+        /// Добавить сущьность
+        /// </summary>
+        /// <typeparam name="T">Тип</typeparam>
+        /// <param name="entity">Экземпляр типа</param>
+        public void Aplay<T>(Entity  entity) where T : class
+        {
+            var type = typeof(T);
+            EnssureCreateType(type);
+            AplayInner(entity, type);
+        }
+
+        /// <summary>
+        /// Копируем оригинал, инициализируем сущьность.
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <param name="type"></param>
+        private void AplayInner(Entity entity, Type type) 
+        {
+            int i = 0;
+            foreach (var pi in PropertyInfoDictionary[type])
+            {
+                //если этот тип значений или это строка, то копируем значения
+                if (pi.PropertyType.IsValueType || pi.PropertyType == typeof(string))
+                {
+                    EntitySet[entity].OriginalValues[pi.Name] = pi.GetMethod.Invoke(entity, null);
+                }
+                else //Клонируем значение 
+                {
+
+                }
+                i++;
+            }
+
+            entity.EntityState = EntityState.Unmodified;
+            entity.EntityStateMonitor = this;
+        }
+
+
+        /// <summary>
         /// Добавить граф отслеживаемых объектов
         /// </summary>
         /// <param name="rootEntity">Узел графа</param>
-        public void ApplayGraph(object rootEntity)
+        public void ApplayGraph(Entity rootEntity)
         {
             throw new NotImplementedException();
         }
