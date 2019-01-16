@@ -4,17 +4,20 @@ using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using TrackableEntity.Annotations;
+using ZeroFormatter;
 
 namespace TrackableEntity
 {
     /// <summary>
     /// Базовая сущьность.
     /// </summary>
+    [ZeroFormattable]
     public  class Entity :  INotifyPropertyChanged
     {
         /// <summary>
         /// Текущее состояние сущьности.
         /// </summary>
+        [IgnoreFormat]
         public EntityState EntityState
         {
             get => _entityState;
@@ -28,6 +31,7 @@ namespace TrackableEntity
         /// <summary>
         /// Контекст отслеживанния.
         /// </summary>
+        [IgnoreFormat]
         public EntityStateMonitor EntityStateMonitor { get; set; }
 
         private List<string> _changedProperty = new List<string>();
@@ -36,6 +40,7 @@ namespace TrackableEntity
         /// <summary>
         /// Для каждого значимого свойства, которое имеет отображение в БД
         /// </summary>
+        
         public virtual  void OnSetValue(Object value, [CallerMemberName] string propertyName = "")
         {
             if (EntityStateMonitor != null) // включено отслеживание
@@ -74,7 +79,7 @@ namespace TrackableEntity
                 EntityStateMonitor.IsChanges = true;
             }
         }
-
+        
         public event PropertyChangedEventHandler PropertyChanged;
 
         [NotifyPropertyChangedInvocator]
@@ -84,25 +89,4 @@ namespace TrackableEntity
         }
     }
 }
-/*
-                   if (EntityStateMonitor.EntitySet.Keys.Count == 1 || EntityStateMonitor.EntitySet.Keys.All(x => x.EntityState == EntityState.Unmodified && x != this))
-                   {
-                       //Остальные ентити не менялись. (или их нет) то проверяем все остальные поля текущей ентити
-                       // у текущей энтити сравнивая с оригиналами ВСЕ свойства.
 
-                       var propertyInfoList = EntityStateMonitor.PropertyInfoDictionary[EntityStateMonitor.EntitySet[this].EntityType];
-                       foreach (var pi in propertyInfoList.Where(x => x.Name != propertyName))
-                       {
-                           var ob = pi.GetMethod.Invoke(this, null);
-                           if (!EntityStateMonitor.EntitySet[this].OriginalValues[pi.Name].Value.Equals(ob))
-                           {
-                               //Нашли другое поле у которого значения отличаются. Дальнеейшее вычисление не важно.
-                               //IsChanges = true
-                               return;
-                           }
-                       }
-                       // Все значения этой энтити равны сохраненным.
-                       EntityState = EntityState.Unmodified;
-                       // Раз все значения всех энтити в статусе Unmodified, значит изменений нет.
-                       EntityStateMonitor.IsChanges = false;
-                   }*/

@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using TrackableEntity.Annotations;
+using ProtoBuf;
 
 namespace TrackableEntity
 {
@@ -135,10 +136,14 @@ namespace TrackableEntity
                     }
                     else
                     {
-                        
+                        //var bytes = Serializer.Deserialize()
+                        // var mc2 = ZeroFormatterSerializer.Deserialize<MyClass>(bytes);
+                        //https://stackoverflow.com/questions/4667981/c-sharp-use-system-type-as-generic-parameter
+                        //var mc2 = ZeroFormatterSerializer.Deserialize(bytes)
+                       // throw new NotImplementedException("TODO: Клонируем значение сериализацией");
                     }
 
-                    throw new  NotImplementedException("TODO: Клонируем значение сериализацией");
+                    
                 }
             }
 

@@ -1,4 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using TrackableEntity;
 
@@ -14,6 +17,12 @@ namespace TrackableEntityTest
             var user = new User();
             user.Name = "Иванов";
             user.Age = 33;
+            user.ListUser = new ObservableCollection<User>();
+
+
+            user.stringArr = new[] {"1", "2"};
+            user.stringList = new List<string>();
+            user.stringList.Add("one");
 
             var es = new EntityStateMonitor();
             es.Aplay<User>(user);
@@ -78,5 +87,11 @@ namespace TrackableEntityTest
                 OnSetValue(value);
             }
         }
+
+
+        public string[] stringArr { get; set; }
+        public List<string> stringList { get; set; }
+
+        public ObservableCollection<User> ListUser { get; set; }
     }
 }
