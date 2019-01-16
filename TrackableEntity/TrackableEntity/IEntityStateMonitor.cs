@@ -10,7 +10,7 @@ namespace TrackableEntity
     /// Главная функция - отслеживание состояний у Entity. Следить за IsChanges и выдача Add/remove/update коллекций.
     /// аналог EntityStateMonitor в EntityFrameworkCore
     /// </summary>
-    interface IEntityStateMonitor 
+    interface IEntityStateMonitor : INotifyPropertyChanged
     {
         /// <summary>
         /// Список ВСЕХ  сущьностей добавленных.

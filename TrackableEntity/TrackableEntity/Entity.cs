@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Collections;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -13,14 +13,25 @@ namespace TrackableEntity
     public  class Entity :  INotifyPropertyChanged
     {
         /// <summary>
-        /// Состояние сущьности.
+        /// Текущее состояние сущьности.
         /// </summary>
-        public EntityState EntityState { get; set; }
+        public EntityState EntityState
+        {
+            get => _entityState;
+            set
+            {
+                _entityState = value;
+                OnPropertyChanged();
+            } 
+        }
 
         /// <summary>
         /// Контекст отслеживанния.
         /// </summary>
         public EntityStateMonitor EntityStateMonitor { get; set; }
+
+        private List<string> _changedProperty = new List<string>();
+        private EntityState _entityState;
 
         /// <summary>
         /// Для каждого значимого свойства, которое имеет отображение в БД
@@ -41,41 +52,23 @@ namespace TrackableEntity
         /// <param name="propertyName"></param>
         private void OnSetValueInner(Object value,  string propertyName )
         {
-            var newEqualOriginal = EntityStateMonitor.EntitySet[this].OriginalValues[propertyName].Equals(value);
+            var newEqualOriginal = EntityStateMonitor.EntitySet[this].OriginalValues[propertyName].Value.Equals(value);
             if (newEqualOriginal)
             {
-                if (EntityStateMonitor.IsChanges)
+                if (_changedProperty.Contains(propertyName))
+                    _changedProperty.Remove(propertyName);
+
+                if (!_changedProperty.Any())
                 {
-                    // Нужно проверить, требуется ли выключить флаг IsChanges.
-                    // Для этого нам нужно проверить весь набор EntitySet.
-                    // Если в EntitySet есть измененные сущьности, то IsChanges=true и выходим из алгоритма.
-
-                    if (EntityStateMonitor.EntitySet.Keys.Count == 1 || EntityStateMonitor.EntitySet.Keys.All(x => x.EntityState == EntityState.Unmodified && x != this))
-                    {
-                        //Остальные ентити не менялись. (или их нет) то проверяем все остальные поля текущей ентити
-                        // у текущей энтити сравнивая с оригиналами ВСЕ свойства.
-
-
-                        var propertyInfoList = EntityStateMonitor.PropertyInfoDictionary[EntityStateMonitor.EntitySet[this].EntityType];
-                        foreach (var pi in propertyInfoList.Where(x => x.Name != propertyName))
-                        {
-                            var ob = pi.GetMethod.Invoke(this, null);
-                            if (!EntityStateMonitor.EntitySet[this].OriginalValues[pi.Name].Equals(ob))
-                            {
-                                //Нашли другое поле у которого значения отличаются. Дальнеейшее вычисление не важно.
-                                //IsChanges = true
-                                return;
-                            }
-                        }
-                        // Все значения этой энтити равны сохраненным.
-                        EntityState = EntityState.Unmodified;
-                        // Раз все значения всех энтити в статусе Unmodified, значит изменений нет.
-                        EntityStateMonitor.IsChanges = false;
-                    }
+                    EntityState = EntityState.Unmodified;
+                    EntityStateMonitor.IsChanges = EntityStateMonitor.EntitySet.Keys.Any(x => x.EntityState != EntityState.Unmodified);
                 }
             }
             else
             {
+                if (!_changedProperty.Contains(propertyName))
+                _changedProperty.Add(propertyName);
+
                 EntityState = EntityState.Modified;
                 //Сигнализируем, что есть изменения
                 EntityStateMonitor.IsChanges = true;
@@ -91,3 +84,25 @@ namespace TrackableEntity
         }
     }
 }
+/*
+                   if (EntityStateMonitor.EntitySet.Keys.Count == 1 || EntityStateMonitor.EntitySet.Keys.All(x => x.EntityState == EntityState.Unmodified && x != this))
+                   {
+                       //Остальные ентити не менялись. (или их нет) то проверяем все остальные поля текущей ентити
+                       // у текущей энтити сравнивая с оригиналами ВСЕ свойства.
+
+                       var propertyInfoList = EntityStateMonitor.PropertyInfoDictionary[EntityStateMonitor.EntitySet[this].EntityType];
+                       foreach (var pi in propertyInfoList.Where(x => x.Name != propertyName))
+                       {
+                           var ob = pi.GetMethod.Invoke(this, null);
+                           if (!EntityStateMonitor.EntitySet[this].OriginalValues[pi.Name].Value.Equals(ob))
+                           {
+                               //Нашли другое поле у которого значения отличаются. Дальнеейшее вычисление не важно.
+                               //IsChanges = true
+                               return;
+                           }
+                       }
+                       // Все значения этой энтити равны сохраненным.
+                       EntityState = EntityState.Unmodified;
+                       // Раз все значения всех энтити в статусе Unmodified, значит изменений нет.
+                       EntityStateMonitor.IsChanges = false;
+                   }*/

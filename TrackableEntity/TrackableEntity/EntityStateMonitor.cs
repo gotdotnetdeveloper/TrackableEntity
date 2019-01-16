@@ -1,7 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
+using TrackableEntity.Annotations;
 
 namespace TrackableEntity
 {
@@ -21,6 +24,8 @@ namespace TrackableEntity
         /// </summary>
         public readonly Dictionary<Type, PropertyInfo[]> PropertyInfoDictionary = new Dictionary<Type, PropertyInfo[]>();
 
+        private bool _isChanges;
+
         public ICollection<Entity> GetAddedItems()
         {
            return EntitySet.Keys.Where(x => x.EntityState == EntityState.New).ToList();
@@ -39,7 +44,18 @@ namespace TrackableEntity
         /// <summary>
         /// Есть ли изменения
         /// </summary>
-        public bool IsChanges { get; set; }
+        public bool IsChanges
+        {
+            get => _isChanges;
+            set
+            {
+                if (_isChanges != value)
+                {
+                    _isChanges = value;
+                    OnPropertyChanged();
+                }
+            } 
+        }
 
         /// <summary>
         /// Добавить Для отслеживания.
@@ -56,7 +72,7 @@ namespace TrackableEntity
             }
         }
         /// <summary>
-        /// Убедимся, что тип создан в кеше.
+        /// Убедимся, что тип создан Reflection в кеше для ускорения.
         /// </summary>
         /// <param name="type">Тип</param>
         private void EnssureCreateType(Type type)
@@ -97,10 +113,31 @@ namespace TrackableEntity
                 //если этот тип значений или это строка, то копируем значения
                 if (pi.PropertyType.IsValueType || pi.PropertyType == typeof(string))
                 {
-                    ei.OriginalValues.Add(pi.Name, pi.GetMethod.Invoke(entity, null));  
+                    var p = new OriginalValueInfo
+                    {
+                        PropertyInfo = pi,
+                        Value = pi.GetMethod.Invoke(entity, null)
+                    };
+
+                    ei.OriginalValues.Add(pi.Name, p);  
                 }
-                else 
+                else
                 {
+                    var referense = pi.GetMethod.Invoke(entity, null);
+                    if (referense is ICloneable cloneable)
+                    {
+                        var p = new OriginalValueInfo
+                        {
+                            PropertyInfo = pi,
+                            Value = cloneable.Clone()
+                        };
+                        ei.OriginalValues.Add(pi.Name, p);
+                    }
+                    else
+                    {
+                        
+                    }
+
                     throw new  NotImplementedException("TODO: Клонируем значение сериализацией");
                 }
             }
@@ -118,6 +155,14 @@ namespace TrackableEntity
         public void ApplayGraph(Entity rootEntity)
         {
             throw new NotImplementedException();
+        }
+
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        [NotifyPropertyChangedInvocator]
+        protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
     }
 }
