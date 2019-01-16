@@ -9,9 +9,8 @@ namespace TrackableEntity
     public enum EntityState
     {
         /// <summary>
-        /// Отсоедененная сущьность
         /// </summary>
-        Detached = 0,
+        None = 0,
 
         /// <summary>
         /// Не менялась

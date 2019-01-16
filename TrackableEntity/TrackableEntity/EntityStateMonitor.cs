@@ -17,7 +17,7 @@ namespace TrackableEntity
         public readonly Dictionary<Entity, EntityInfo> EntitySet = new Dictionary<Entity, EntityInfo>(ReferenceEqualityComparer.Instance);
 
         /// <summary>
-        /// Закешированный справочник типов. (Чтоб рефрексии было поменьше)
+        /// Закешированный справочник типов. (Чтоб рефлексии было поменьше)
         /// </summary>
         public readonly Dictionary<Type, PropertyInfo[]> PropertyInfoDictionary = new Dictionary<Type, PropertyInfo[]>();
 
@@ -63,8 +63,10 @@ namespace TrackableEntity
         {
             if (!PropertyInfoDictionary.ContainsKey(type))
             {
-                PropertyInfoDictionary[type] = type.GetProperties(BindingFlags.Public)
-                    .Where(x => x.CanWrite && x.CanRead).ToArray();
+                PropertyInfoDictionary[type] = type.GetProperties()
+                    .Where(x => x.CanWrite && x.CanRead
+                                           && x.Name != nameof(EntityStateMonitor)
+                                           && x.Name != nameof(EntityState)).ToArray();
             }
         }
         /// <summary>
@@ -86,23 +88,26 @@ namespace TrackableEntity
         /// <param name="type"></param>
         private void AplayInner(Entity entity, Type type) 
         {
-            int i = 0;
+            var ei = new EntityInfo();
+            ei.Entity = entity;
+            ei.EntityType = type;
+
             foreach (var pi in PropertyInfoDictionary[type])
             {
                 //если этот тип значений или это строка, то копируем значения
                 if (pi.PropertyType.IsValueType || pi.PropertyType == typeof(string))
                 {
-                    EntitySet[entity].OriginalValues[pi.Name] = pi.GetMethod.Invoke(entity, null);
+                    ei.OriginalValues.Add(pi.Name, pi.GetMethod.Invoke(entity, null));  
                 }
-                else //Клонируем значение 
+                else 
                 {
-
+                    throw new  NotImplementedException("TODO: Клонируем значение сериализацией");
                 }
-                i++;
             }
 
             entity.EntityState = EntityState.Unmodified;
             entity.EntityStateMonitor = this;
+            EntitySet.Add(entity, ei);
         }
 
 

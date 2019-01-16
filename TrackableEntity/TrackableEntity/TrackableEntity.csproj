@@ -48,6 +48,7 @@
   <ItemGroup>
     <Compile Include="Entity.cs" />
     <Compile Include="EntityCollection.cs" />
+    <Compile Include="EntityInfo.cs" />
     <Compile Include="EntityState.cs" />
     <Compile Include="EntityStateMonitor.cs" />
     <Compile Include="IEntityStateMonitor.cs" />
