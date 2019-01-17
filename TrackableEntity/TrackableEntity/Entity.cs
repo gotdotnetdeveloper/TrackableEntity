@@ -25,13 +25,17 @@ namespace TrackableEntity
                 OnPropertyChanged();
             } 
         }
+        /// <summary>
+        /// Список измененных пропертей
+        /// </summary>
+        public List<string> ChangedProperties { get; set; } = new List<string>();
 
         /// <summary>
         /// Контекст отслеживанния.
         /// </summary>
         public EntityStateMonitor EntityStateMonitor { get; set; }
 
-        private List<string> _changedProperty = new List<string>();
+        
         private EntityState _entityState;
 
         /// <summary>
@@ -83,6 +87,12 @@ namespace TrackableEntity
 
         private bool AreEqualsToOriginal(OriginalValueInfo originalInfo,  Object value)
         {
+            if (originalInfo.Value == null && value == null)
+                return true;
+
+            if (originalInfo.Value == null || value == null)
+                return false;
+
             if (originalInfo.PropertyInfo.PropertyType.IsValueType
                 || originalInfo.PropertyInfo.PropertyType == typeof(string))
             {
@@ -91,11 +101,7 @@ namespace TrackableEntity
             }
             else //referense type
             {
-                if (originalInfo.Value == null && value == null)
-                    return true;
-
-                if (originalInfo.Value == null || value == null)
-                    return false;
+              
 
                 //тут точно знаем, что оба не null 
                 if (originalInfo.Value is IEnumerable originalEnumerable && value  is IEnumerable valueEnumerable)
@@ -150,23 +156,23 @@ namespace TrackableEntity
 
             if (newEqualOriginal)
             {
-                if (_changedProperty.Contains(propertyName))
-                    _changedProperty.Remove(propertyName);
+                if (ChangedProperties.Contains(propertyName))
+                    ChangedProperties.Remove(propertyName);
 
-                if (!_changedProperty.Any())
+                if (!ChangedProperties.Any())
                 {
                     EntityState = EntityState.Unmodified;
-                    EntityStateMonitor.IsChanges = EntityStateMonitor.EntitySet.Keys.Any(x => x.EntityState != EntityState.Unmodified);
+                    EntityStateMonitor.IsChanged = EntityStateMonitor.EntitySet.Keys.Any(x => x.EntityState != EntityState.Unmodified);
                 }
             }
             else
             {
-                if (!_changedProperty.Contains(propertyName))
-                _changedProperty.Add(propertyName);
+                if (!ChangedProperties.Contains(propertyName))
+                ChangedProperties.Add(propertyName);
 
                 EntityState = EntityState.Modified;
                 //Сигнализируем, что есть изменения
-                EntityStateMonitor.IsChanges = true;
+                EntityStateMonitor.IsChanged = true;
             }
         }
         

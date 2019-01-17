@@ -1,16 +1,13 @@
 ﻿using System.Collections.Generic;
 using System.ComponentModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace TrackableEntity
 {
     /// <summary>
-    /// Главная функция - отслеживание состояний у Entity. Следить за IsChanges и выдача Add/remove/update коллекций.
+    /// Главная функция - отслеживание состояний у Entity. Следить за IsChanged и выдача Add/remove/update коллекций.
     /// аналог EntityStateMonitor в EntityFrameworkCore
     /// </summary>
-    interface IEntityStateMonitor : INotifyPropertyChanged
+    interface IEntityStateMonitor : INotifyPropertyChanged, IRevertibleChangeTracking
     {
         /// <summary>
         /// Список ВСЕХ  сущьностей добавленных.
@@ -28,12 +25,6 @@ namespace TrackableEntity
         /// <returns></returns>
         ICollection<Entity> GetDeletedItems();
 
-        /// <summary>
-        /// Ecть ли изменения. 
-        /// реализация - В момент сета или добавления коллекции
-        /// </summary>
-        /// <returns>true = есть изменения</returns>
-        bool IsChanges { get; set; }
 
         /// <summary>
         /// Добавить граф отслеживаемых объектов (рекурсивный обход дерева по Entity).

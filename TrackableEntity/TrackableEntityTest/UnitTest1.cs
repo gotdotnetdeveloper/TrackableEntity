@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using TrackableEntity;
@@ -13,20 +11,29 @@ namespace TrackableEntityTest
     [TestClass]
     public class EntityStateMonitorUnitTest
     {
-        //[TestMethod]
-        //public void TestMethod_5423543()
-        //{
-        //    int[] numbers = { 0, 2, 4, 6, 8, 10 };
+        [TestMethod]
+        public void TestMethod_RejectChanges_AcceptChanges()
+        {
+            var user = new User();
+            user.Age = 33;
 
-        //    IEnumerator ie = numbers.GetEnumerator(); // получаем IEnumerator
-        //    while (ie.MoveNext())   // пока не будет возвращено false
-        //    {
-        //        int item = (int)ie.Current;     // берем элемент на текущей позиции
-        //        Console.WriteLine(item);
-        //    }
-        //    ie.Reset(); // сбрасываем указатель в начало массива
-        //    Console.Read();
-        //}
+            var es = new EntityStateMonitor();
+            es.Aplay<User>(user);
+
+            Assert.IsFalse(es.IsChanged);
+            user.Age = 40;
+            Assert.IsTrue(es.IsChanged);
+
+            es.RejectChanges();
+            Assert.IsTrue(user.Age == 33);
+            Assert.IsFalse(es.IsChanged);
+
+            user.Age = 40;
+            Assert.IsTrue(es.IsChanged);
+            es.AcceptChanges();
+            Assert.IsTrue(user.Age == 40);
+            Assert.IsFalse(es.IsChanged);
+        }
 
         /// <summary>
         /// Простой метод редактирования массива (ссылочного типа)
@@ -45,16 +52,16 @@ namespace TrackableEntityTest
             var es = new EntityStateMonitor();
             es.Aplay<User>(user);
 
-            Assert.IsFalse(es.IsChanges);
+            Assert.IsFalse(es.IsChanged);
 
             user.ByteArray = r2;
-            Assert.IsFalse(es.IsChanges);
+            Assert.IsFalse(es.IsChanged);
 
             user.ByteArray = r3;
-            Assert.IsTrue(es.IsChanges);
+            Assert.IsTrue(es.IsChanged);
 
             user.ByteArray = r2;
-            Assert.IsFalse(es.IsChanges);
+            Assert.IsFalse(es.IsChanged);
         }
 
         [TestMethod]
@@ -70,16 +77,16 @@ namespace TrackableEntityTest
             var es = new EntityStateMonitor();
             es.Aplay<User>(user);
 
-            Assert.IsFalse(es.IsChanges);
+            Assert.IsFalse(es.IsChanged);
 
             user.StringArray = r2;
-            Assert.IsFalse(es.IsChanges);
+            Assert.IsFalse(es.IsChanged);
 
             user.StringArray = r3;
-            Assert.IsTrue(es.IsChanges);
+            Assert.IsTrue(es.IsChanged);
 
             user.StringArray = r2;
-            Assert.IsFalse(es.IsChanges);
+            Assert.IsFalse(es.IsChanged);
         }
 
 
@@ -100,11 +107,11 @@ namespace TrackableEntityTest
 
             var es = new EntityStateMonitor();
             es.Aplay<User>(user);
-            Assert.IsFalse(es.IsChanges);
+            Assert.IsFalse(es.IsChanged);
             user.Age = 40;
-            Assert.IsTrue(es.IsChanges);
+            Assert.IsTrue(es.IsChanged);
             user.Age = 33;
-            Assert.IsFalse(es.IsChanges);
+            Assert.IsFalse(es.IsChanged);
         }
 
         /// <summary>
@@ -131,11 +138,11 @@ namespace TrackableEntityTest
             //Возращаем назад возраст
 
             user.Age = 33;
-            //Иванова вернули назад, но Васечкин в модифицированном состоянии. Должно быть IsChanges= true
-            Assert.IsTrue(es.IsChanges);
+            //Иванова вернули назад, но Васечкин в модифицированном состоянии. Должно быть IsChanged= true
+            Assert.IsTrue(es.IsChanged);
             user2.Age = 7;
-            //Васечкин вернули назад, Теперь все сущьности в исходном состоянии. Должно быть IsChanges= false
-            Assert.IsFalse(es.IsChanges);
+            //Васечкин вернули назад, Теперь все сущьности в исходном состоянии. Должно быть IsChanged= false
+            Assert.IsFalse(es.IsChanged);
         }
     }
 

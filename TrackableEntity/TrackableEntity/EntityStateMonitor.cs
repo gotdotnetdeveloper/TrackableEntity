@@ -9,7 +9,7 @@ using TrackableEntity.Annotations;
 namespace TrackableEntity
 {
     /// <summary>
-    /// Главная функция - отслеживание состояний у Entity. Следить за IsChanges и выдача Add/remove/update коллекций.
+    /// Главная функция - отслеживание состояний у Entity. Следить за IsChanged и выдача Add/remove/update коллекций.
     /// аналог EntityStateMonitor в EntityFrameworkCore
     /// </summary>
     public class EntityStateMonitor : IEntityStateMonitor
@@ -24,7 +24,7 @@ namespace TrackableEntity
         /// </summary>
         public readonly Dictionary<Type, PropertyInfo[]> PropertyInfoDictionary = new Dictionary<Type, PropertyInfo[]>();
 
-        private bool _isChanges;
+        private bool _isChanged;
 
         public ICollection<Entity> GetAddedItems()
         {
@@ -44,14 +44,14 @@ namespace TrackableEntity
         /// <summary>
         /// Есть ли изменения
         /// </summary>
-        public bool IsChanges
+        public bool IsChanged
         {
-            get => _isChanges;
+            get => _isChanged;
             set
             {
-                if (_isChanges != value)
+                if (_isChanged != value)
                 {
-                    _isChanges = value;
+                    _isChanged = value;
                     OnPropertyChanged();
                 }
             } 
@@ -82,6 +82,7 @@ namespace TrackableEntity
                 PropertyInfoDictionary[type] = type.GetProperties()
                     .Where(x => x.CanWrite && x.CanRead
                                            && x.Name != nameof(EntityStateMonitor)
+                                           && x.Name != "ChangedProperties"
                                            && x.Name != nameof(EntityState)).ToArray();
             }
         }
@@ -110,43 +111,100 @@ namespace TrackableEntity
 
             foreach (var pi in PropertyInfoDictionary[type])
             {
-                //если этот тип значений или это строка, то копируем значения
-                if (pi.PropertyType.IsValueType || pi.PropertyType == typeof(string))
+                if (TryGetOriginal(out var originalValue ,pi, entity))
                 {
-                    var p = new OriginalValueInfo
+                    var originalValueInfo = new OriginalValueInfo
                     {
                         PropertyInfo = pi,
-                        Value = pi.GetMethod.Invoke(entity, null)
+                        Value = originalValue
                     };
 
-                    ei.OriginalValues.Add(pi.Name, p);  
+                    ei.OriginalValues.Add(pi.Name, originalValueInfo);
                 }
-                else
-                {
-                    var referense = pi.GetMethod.Invoke(entity, null);
-                    if (referense is ICloneable cloneable)
-                    {
-                        var p = new OriginalValueInfo
-                        {
-                            PropertyInfo = pi,
-                            Value = cloneable.Clone()
-                        };
-                        ei.OriginalValues.Add(pi.Name, p);
-                    }
-                    else
-                    {
-                        //var bytes = Serializer.Deserialize()
-                        // var mc2 = ZeroFormatterSerializer.Deserialize<MyClass>(bytes);
-                        //https://stackoverflow.com/questions/4667981/c-sharp-use-system-type-as-generic-parameter
-                        //var mc2 = ZeroFormatterSerializer.Deserialize(bytes)
-                       // throw new NotImplementedException("TODO: Клонируем значение сериализацией");
-                    }
-                }
+                
             }
             entity.EntityState = EntityState.Unmodified;
             entity.EntityStateMonitor = this;
             EntitySet.Add(entity, ei);
         }
+
+        /// <summary>
+        /// По PropertyInfo получить описание сохраненного значения.
+        /// </summary>
+        /// <param name="pi"></param>
+        /// <param name="entity"></param>
+        /// <returns></returns>
+        private OriginalValueInfo GetOriginalValueInfoBy(PropertyInfo pi, Entity entity)
+        {
+            //если этот тип значений или это строка, то копируем значения
+            if (pi.PropertyType.IsValueType || pi.PropertyType == typeof(string))
+            {
+                var p = new OriginalValueInfo
+                {
+                    PropertyInfo = pi,
+                    Value = pi.GetMethod.Invoke(entity, null)
+                };
+                return p;
+            }
+            else
+            {
+                var referense = pi.GetMethod.Invoke(entity, null);
+                if (referense is ICloneable cloneable)
+                {
+                    var p = new OriginalValueInfo
+                    {
+                        PropertyInfo = pi,
+                        Value = cloneable.Clone()
+                    };
+                    return p;
+                }
+                else
+                {
+                    //var bytes = Serializer.Deserialize()
+                    // var mc2 = ZeroFormatterSerializer.Deserialize<MyClass>(bytes);
+                    //https://stackoverflow.com/questions/4667981/c-sharp-use-system-type-as-generic-parameter
+                    //var mc2 = ZeroFormatterSerializer.Deserialize(bytes)
+                    // throw new NotImplementedException("TODO: Клонируем значение сериализацией");
+                }
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Пробуем получить оригинальное значение
+        /// </summary>
+        private bool TryGetOriginal(out object original, PropertyInfo pi, Entity entity)
+        {
+            //если этот тип значений или это строка, то копируем значения
+            if (pi.PropertyType.IsValueType || pi.PropertyType == typeof(string))
+            {
+                original = pi.GetMethod.Invoke(entity, null);
+                return true;
+
+            }
+            else
+            {
+                var referense = pi.GetMethod.Invoke(entity, null);
+                if (referense is ICloneable cloneable)
+                {
+                    original = cloneable.Clone();
+                    return true;
+                }
+                else
+                {
+                    original = null;
+                    return false;
+                    //var bytes = Serializer.Deserialize()
+                    // var mc2 = ZeroFormatterSerializer.Deserialize<MyClass>(bytes);
+                    //https://stackoverflow.com/questions/4667981/c-sharp-use-system-type-as-generic-parameter
+                    //var mc2 = ZeroFormatterSerializer.Deserialize(bytes)
+                    // throw new NotImplementedException("TODO: Клонируем значение сериализацией");
+                }
+            }
+        }
+
+
+
         /// <summary>
         /// Добавить граф отслеживаемых объектов
         /// </summary>
@@ -163,5 +221,53 @@ namespace TrackableEntity
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
+
+        /// <summary>
+        /// Текущее состояние теперь актуальное. Сохранить заново original.
+        /// </summary>
+        public void AcceptChanges()
+        {
+            foreach (var entity in EntitySet.Keys.Where(x => x.EntityState != EntityState.Unmodified))
+            {
+                EntitySet[entity].Entity.EntityState = EntityState.Unmodified;
+                //пересохранение Original значения. Только для измененных.
+
+                foreach (var propertyName in entity.ChangedProperties)
+                {
+                    var originalValueInfo = EntitySet[entity].OriginalValues[propertyName];
+
+                    if (TryGetOriginal(out var original, originalValueInfo.PropertyInfo, entity))
+                    {
+                        originalValueInfo.Value = original;
+                    }
+                }
+            }
+
+            IsChanged = false;
+        }
+
+        /// <summary>
+        /// Вернуть все назад. Восстановить из оригинальной копии. entity.Property = original;
+        /// </summary>
+        public void RejectChanges()
+        {
+            foreach (var entity in EntitySet.Keys.Where(x=>x.EntityState == EntityState.Modified || x.EntityState == EntityState.Deleted))
+            {
+                EntitySet[entity].Entity.EntityState = EntityState.Unmodified;
+                //пересохранение текущего значения у измененных свойств.
+
+                foreach (var propertyName in entity.ChangedProperties)
+                {
+                    var originalValueInfo = EntitySet[entity].OriginalValues[propertyName];
+                    var monitor = entity.EntityStateMonitor;
+                    entity.EntityStateMonitor = null; //уберем ссылку на монитор на момент сета в проперти. что бы не обрабатывалось сравнение.
+                    originalValueInfo.PropertyInfo.SetMethod.Invoke(entity, new[] { originalValueInfo.Value });
+                    entity.EntityStateMonitor = monitor;
+                }
+            }
+            IsChanged = false;
+        }
+
+       
     }
 }
