@@ -41,22 +41,6 @@ namespace TrackableEntity
         /// </summary>
         /// <param name="rootEntity">Узел графа</param>
         void ApplayGraph(Entity rootEntity);
-
-        /*
-         Внутри будем хранить 2 коллекции ВСЕХ энтити
-         1) Original (object referense, int TrakerHashcode() - valueСостояние для трекера)
-         2) Current (object referense,  valueСостояние для трекера, EntityState(Add/remove/IsChanges/NonChanges) )
-         *
-         * При добавлении новой энтити - проставляем в базовом классе, ссылку на IEntityStateMonitor
-         *
-         При добавление ентити в коллекцию, добавляем в current пересчитываем TrakerHashcode() 
-         
-        При Add/remove = выставляем состояние EntityState.
-         
-        При SetValue = get/set пересчитываем TrakerHashcode() выставляем IsChanges.
-        */
     }
 
-    // Храним метадата проперти, id, Находим все поля, сериализуем все.
-    //  internal IDictionary<string, object> OriginalValues
 }

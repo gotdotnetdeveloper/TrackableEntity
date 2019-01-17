@@ -5,20 +5,17 @@ using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using TrackableEntity.Annotations;
-using ZeroFormatter;
 
 namespace TrackableEntity
 {
     /// <summary>
     /// Базовая сущьность.
     /// </summary>
-    [ZeroFormattable]
     public  class Entity :  INotifyPropertyChanged
     {
         /// <summary>
         /// Текущее состояние сущьности.
         /// </summary>
-        [IgnoreFormat]
         public EntityState EntityState
         {
             get => _entityState;
@@ -32,7 +29,6 @@ namespace TrackableEntity
         /// <summary>
         /// Контекст отслеживанния.
         /// </summary>
-        [IgnoreFormat]
         public EntityStateMonitor EntityStateMonitor { get; set; }
 
         private List<string> _changedProperty = new List<string>();
