@@ -5,7 +5,6 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using TrackableEntity.Annotations;
-using ProtoBuf;
 
 namespace TrackableEntity
 {
@@ -142,17 +141,12 @@ namespace TrackableEntity
                         //var mc2 = ZeroFormatterSerializer.Deserialize(bytes)
                        // throw new NotImplementedException("TODO: Клонируем значение сериализацией");
                     }
-
-                    
                 }
             }
-
             entity.EntityState = EntityState.Unmodified;
             entity.EntityStateMonitor = this;
             EntitySet.Add(entity, ei);
         }
-
-
         /// <summary>
         /// Добавить граф отслеживаемых объектов
         /// </summary>

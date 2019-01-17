@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
@@ -49,6 +50,98 @@ namespace TrackableEntity
             }
               PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
+        /// <summary>
+        /// IStructuralEquatable
+        /// </summary>
+        /// <param name="current"></param>
+        /// <param name="other"></param>
+        /// <returns></returns>
+        bool ArrayEquals(object current,  object other)
+        {
+            if (other == null)
+                return false;
+            if (this == other)
+                return true;
+            Array a1 = current as Array;
+            Array a2 = other as Array;
+
+            if (a1 == null && a2 == null)
+                return true;
+
+            if (a1 == null || a2 == null)
+                return false;
+
+            if (a2.Length != a1.Length)
+                return false;
+
+            for (int index = 0; index < a2.Length; ++index)
+            {
+                object x = a1.GetValue(index);
+                object y = a2.GetValue(index);
+                if (!x.Equals( y))
+                    return false;
+            }
+            return true;
+        }
+
+
+        private bool AreEqualsToOriginal(OriginalValueInfo originalInfo,  Object value)
+        {
+            if (originalInfo.PropertyInfo.PropertyType.IsValueType
+                || originalInfo.PropertyInfo.PropertyType == typeof(string))
+            {
+                
+                return originalInfo.Value.Equals(value);
+            }
+            else //referense type
+            {
+                if (originalInfo.Value == null && value == null)
+                    return true;
+
+                if (originalInfo.Value == null || value == null)
+                    return false;
+
+                //тут точно знаем, что оба не null 
+                if (originalInfo.Value is IEnumerable originalEnumerable && value  is IEnumerable valueEnumerable)
+                {
+                    var e1 = originalEnumerable.GetEnumerator();
+                    var e2 = valueEnumerable.GetEnumerator();
+                    e1.Reset();
+                    e2.Reset();
+
+                    while (true)
+                    {
+                        var nextExist1 = e1.MoveNext();
+                        var nextExist2 = e2.MoveNext();
+
+                        if (nextExist1 != nextExist2)
+                            return false; //количество элементов разное
+
+                        if (!nextExist1)
+                            return true; //закончились элементы для проверки. И все элементы равны
+
+                        bool isItemEquals;
+
+                        if ((e1.Current is ValueType || e1.Current is string) && (e2.Current is ValueType || e2.Current is string))
+                        {
+                            isItemEquals = e1.Current.Equals(e2.Current);
+                        }
+                        else
+                        {
+                            throw new Exception(
+                                $"PropertyName={originalInfo.PropertyInfo.Name}; TrackableEntity.AreEqualsToOriginal(..) Can get equals only IEnumerable<ValueType>! ");
+                        }
+
+                        if (!isItemEquals)
+                            return false; //нашли значение не равное
+
+                    }
+                }
+                
+            }
+            return true;
+        }
+
 
         /// <summary>
         /// Обработка действий связанных с EntityStateMonitor
@@ -57,7 +150,8 @@ namespace TrackableEntity
         /// <param name="propertyName"></param>
         private void OnSetValueInner(Object value,  string propertyName )
         {
-            var newEqualOriginal = EntityStateMonitor.EntitySet[this].OriginalValues[propertyName].Value.Equals(value);
+            var newEqualOriginal = AreEqualsToOriginal(EntityStateMonitor.EntitySet[this].OriginalValues[propertyName] , value);
+
             if (newEqualOriginal)
             {
                 if (_changedProperty.Contains(propertyName))
