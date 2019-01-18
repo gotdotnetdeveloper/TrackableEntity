@@ -4,7 +4,7 @@ using System.ComponentModel;
 namespace TrackableEntity
 {
     /// <summary>
-    /// Главная функция - отслеживание состояний у Entity. Следить за IsChanged и выдача Add/remove/update коллекций.
+    /// Главная функция - отслеживание состояний у BaseEntity. Следить за IsChanged и выдача Add/remove/update коллекций.
     /// аналог EntityStateMonitor в EntityFrameworkCore
     /// </summary>
     interface IEntityStateMonitor : INotifyPropertyChanged, IRevertibleChangeTracking
@@ -13,25 +13,25 @@ namespace TrackableEntity
         /// Список ВСЕХ  сущьностей добавленных.
         /// </summary>
         /// <returns></returns>
-        ICollection<Entity> GetAddedItems();
+        ICollection<BaseEntity> GetAddedItems();
         /// <summary>
         /// Список ВСЕХ сущьностей измененных.
         /// </summary>
         /// <returns></returns>
-        ICollection<Entity> GetChangedItems();
+        ICollection<BaseEntity> GetChangedItems();
         /// <summary>
         /// Список ВСЕХ сущьностей удаленных.
         /// </summary>
         /// <returns></returns>
-        ICollection<Entity> GetDeletedItems();
+        ICollection<BaseEntity> GetDeletedItems();
 
 
         /// <summary>
-        /// Добавить граф отслеживаемых объектов (рекурсивный обход дерева по Entity).
+        /// Добавить граф отслеживаемых объектов (рекурсивный обход дерева по BaseEntity).
         /// Делает фотографию всех сущьностей
         /// </summary>
-        /// <param name="rootEntity">Узел графа</param>
-        void ApplayGraph(Entity rootEntity);
+        /// <param name="rootBaseEntity">Узел графа</param>
+        void ApplayGraph(BaseEntity rootBaseEntity);
     }
 
 }

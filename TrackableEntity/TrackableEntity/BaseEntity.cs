@@ -11,7 +11,7 @@ namespace TrackableEntity
     /// <summary>
     /// Базовая сущьность.
     /// </summary>
-    public  class Entity :  INotifyPropertyChanged
+    public  class BaseEntity :  INotifyPropertyChanged
     {
         /// <summary>
         /// Текущее состояние сущьности.
@@ -31,19 +31,44 @@ namespace TrackableEntity
         public List<string> ChangedProperties { get; set; } = new List<string>();
 
         /// <summary>
-        /// Контекст отслеживанния.
+        /// Монитор отслеживанния.
         /// </summary>
         public EntityStateMonitor EntityStateMonitor { get; set; }
 
-        
+        /// <summary>
+        /// Текущие значение свойств.
+        /// </summary>
+      protected  Dictionary<String, Object> CurrentProperties { get; set; } = new Dictionary<String, Object>();
+
+
         private EntityState _entityState;
+
+        /// <summary>
+        /// Получить значение свойства.
+        /// </summary>
+        /// <typeparam name="T">Тип получаемого значения.</typeparam>
+        /// <param name="propertyName">Имя свойства.</param>
+        /// <returns>Значение свойства</returns>
+        protected T GetValue<T>([CallerMemberName] string propertyName = "")
+        {
+            if (CurrentProperties.TryGetValue(propertyName, out var val))
+            {
+                return (T)val;
+            }
+            else
+            {// еще не делали SetValue для параметра. Добавим дефолтное значение
+                CurrentProperties[propertyName] = default(T);
+                return (T) CurrentProperties[propertyName] ;
+            }
+        }
 
         /// <summary>
         /// Для каждого значимого свойства, которое имеет отображение в БД
         /// </summary>
-        
-        public virtual  void OnSetValue(Object value, [CallerMemberName] string propertyName = "")
+        protected virtual  void SetValue(Object value, [CallerMemberName] string propertyName = "")
         {
+            CurrentProperties[propertyName] = value;
+
             if (EntityStateMonitor != null) // включено отслеживание
             {
                 OnSetValueInner(value, propertyName);
@@ -84,7 +109,6 @@ namespace TrackableEntity
             return true;
         }
 
-
         private bool AreEqualsToOriginal(OriginalValueInfo originalInfo,  Object value)
         {
             if (originalInfo.Value == null && value == null)
@@ -96,13 +120,10 @@ namespace TrackableEntity
             if (originalInfo.PropertyInfo.PropertyType.IsValueType
                 || originalInfo.PropertyInfo.PropertyType == typeof(string))
             {
-                
                 return originalInfo.Value.Equals(value);
             }
             else //referense type
             {
-              
-
                 //тут точно знаем, что оба не null 
                 if (originalInfo.Value is IEnumerable originalEnumerable && value  is IEnumerable valueEnumerable)
                 {

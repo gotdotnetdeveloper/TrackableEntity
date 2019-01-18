@@ -9,7 +9,7 @@ using TrackableEntity.Annotations;
 namespace TrackableEntity
 {
     /// <summary>
-    /// Главная функция - отслеживание состояний у Entity. Следить за IsChanged и выдача Add/remove/update коллекций.
+    /// Главная функция - отслеживание состояний у BaseEntity. Следить за IsChanged и выдача Add/remove/update коллекций.
     /// аналог EntityStateMonitor в EntityFrameworkCore
     /// </summary>
     public class EntityStateMonitor : IEntityStateMonitor
@@ -17,7 +17,7 @@ namespace TrackableEntity
         /// <summary>
         /// Все отслеживаемые сущьности
         /// </summary>
-        public readonly Dictionary<Entity, EntityInfo> EntitySet = new Dictionary<Entity, EntityInfo>(ReferenceEqualityComparer.Instance);
+        public readonly Dictionary<BaseEntity, EntityInfo> EntitySet = new Dictionary<BaseEntity, EntityInfo>(ReferenceEqualityComparer.Instance);
 
         /// <summary>
         /// Закешированный справочник типов. (Чтоб рефлексии было поменьше)
@@ -26,17 +26,17 @@ namespace TrackableEntity
 
         private bool _isChanged;
 
-        public ICollection<Entity> GetAddedItems()
+        public ICollection<BaseEntity> GetAddedItems()
         {
            return EntitySet.Keys.Where(x => x.EntityState == EntityState.New).ToList();
         }
 
-        public ICollection<Entity> GetChangedItems()
+        public ICollection<BaseEntity> GetChangedItems()
         {
             return EntitySet.Keys.Where(x => x.EntityState == EntityState.Modified).ToList();
         }
 
-        public ICollection<Entity> GetDeletedItems()
+        public ICollection<BaseEntity> GetDeletedItems()
         {
             return EntitySet.Keys.Where(x => x.EntityState == EntityState.Deleted).ToList();
         }
@@ -57,12 +57,13 @@ namespace TrackableEntity
             } 
         }
 
+
         /// <summary>
-        /// Добавить Для отслеживания.
+        /// Добавить сущьности в контейнер для отслеживания. Откопировать свойства. Закешировать тип свойств.
         /// </summary>
         /// <typeparam name="T">Тип</typeparam>
         /// <param name="entityCollection"> Коллекция экземпляров.</param>
-        public void Aplay<T>(IEnumerable<Entity> entityCollection) where T : class
+        public void Aplay<T>(IEnumerable<BaseEntity> entityCollection) where T : class
         {
             var type = typeof(T);
             EnssureCreateType(type);
@@ -83,35 +84,36 @@ namespace TrackableEntity
                     .Where(x => x.CanWrite && x.CanRead
                                            && x.Name != nameof(EntityStateMonitor)
                                            && x.Name != "ChangedProperties"
+                                           && x.Name != "CurrentProperties"
                                            && x.Name != nameof(EntityState)).ToArray();
             }
         }
         /// <summary>
-        /// Добавить сущьность
+        /// Добавить сущьность в контейнер для отслеживания. Откопировать свойства. Закешировать тип свойств.
         /// </summary>
         /// <typeparam name="T">Тип</typeparam>
-        /// <param name="entity">Экземпляр типа</param>
-        public void Aplay<T>(Entity  entity) where T : class
+        /// <param name="baseEntity">Экземпляр типа</param>
+        public void Aplay<T>(BaseEntity  baseEntity) where T : class
         {
             var type = typeof(T);
             EnssureCreateType(type);
-            AplayInner(entity, type);
+            AplayInner(baseEntity, type);
         }
 
         /// <summary>
         /// Копируем оригинал, инициализируем сущьность.
         /// </summary>
-        /// <param name="entity"></param>
+        /// <param name="baseEntity"></param>
         /// <param name="type"></param>
-        private void AplayInner(Entity entity, Type type) 
+        private void AplayInner(BaseEntity baseEntity, Type type) 
         {
             var ei = new EntityInfo();
-            ei.Entity = entity;
+            ei.BaseEntity = baseEntity;
             ei.EntityType = type;
 
             foreach (var pi in PropertyInfoDictionary[type])
             {
-                if (TryGetOriginal(out var originalValue ,pi, entity))
+                if (TryMakeOriginal(out var originalValue ,pi, baseEntity))
                 {
                     var originalValueInfo = new OriginalValueInfo
                     {
@@ -123,18 +125,18 @@ namespace TrackableEntity
                 }
                 
             }
-            entity.EntityState = EntityState.Unmodified;
-            entity.EntityStateMonitor = this;
-            EntitySet.Add(entity, ei);
+            baseEntity.EntityState = EntityState.Unmodified;
+            baseEntity.EntityStateMonitor = this;
+            EntitySet.Add(baseEntity, ei);
         }
 
         /// <summary>
         /// По PropertyInfo получить описание сохраненного значения.
         /// </summary>
         /// <param name="pi"></param>
-        /// <param name="entity"></param>
+        /// <param name="baseEntity"></param>
         /// <returns></returns>
-        private OriginalValueInfo GetOriginalValueInfoBy(PropertyInfo pi, Entity entity)
+        private OriginalValueInfo GetOriginalValueInfoBy(PropertyInfo pi, BaseEntity baseEntity)
         {
             //если этот тип значений или это строка, то копируем значения
             if (pi.PropertyType.IsValueType || pi.PropertyType == typeof(string))
@@ -142,13 +144,13 @@ namespace TrackableEntity
                 var p = new OriginalValueInfo
                 {
                     PropertyInfo = pi,
-                    Value = pi.GetMethod.Invoke(entity, null)
+                    Value = pi.GetMethod.Invoke(baseEntity, null)
                 };
                 return p;
             }
             else
             {
-                var referense = pi.GetMethod.Invoke(entity, null);
+                var referense = pi.GetMethod.Invoke(baseEntity, null);
                 if (referense is ICloneable cloneable)
                 {
                     var p = new OriginalValueInfo
@@ -173,18 +175,18 @@ namespace TrackableEntity
         /// <summary>
         /// Пробуем получить оригинальное значение
         /// </summary>
-        private bool TryGetOriginal(out object original, PropertyInfo pi, Entity entity)
+        private bool TryMakeOriginal(out object original, PropertyInfo pi, BaseEntity baseEntity)
         {
             //если этот тип значений или это строка, то копируем значения
             if (pi.PropertyType.IsValueType || pi.PropertyType == typeof(string))
             {
-                original = pi.GetMethod.Invoke(entity, null);
+                original = pi.GetMethod.Invoke(baseEntity, null);
                 return true;
 
             }
             else
             {
-                var referense = pi.GetMethod.Invoke(entity, null);
+                var referense = pi.GetMethod.Invoke(baseEntity, null);
                 if (referense is ICloneable cloneable)
                 {
                     original = cloneable.Clone();
@@ -208,8 +210,8 @@ namespace TrackableEntity
         /// <summary>
         /// Добавить граф отслеживаемых объектов
         /// </summary>
-        /// <param name="rootEntity">Узел графа</param>
-        public void ApplayGraph(Entity rootEntity)
+        /// <param name="rootBaseEntity">Узел графа</param>
+        public void ApplayGraph(BaseEntity rootBaseEntity)
         {
             throw new NotImplementedException();
         }
@@ -229,14 +231,14 @@ namespace TrackableEntity
         {
             foreach (var entity in EntitySet.Keys.Where(x => x.EntityState != EntityState.Unmodified))
             {
-                EntitySet[entity].Entity.EntityState = EntityState.Unmodified;
+                EntitySet[entity].BaseEntity.EntityState = EntityState.Unmodified;
                 //пересохранение Original значения. Только для измененных.
 
                 foreach (var propertyName in entity.ChangedProperties)
                 {
                     var originalValueInfo = EntitySet[entity].OriginalValues[propertyName];
 
-                    if (TryGetOriginal(out var original, originalValueInfo.PropertyInfo, entity))
+                    if (TryMakeOriginal(out var original, originalValueInfo.PropertyInfo, entity))
                     {
                         originalValueInfo.Value = original;
                     }
@@ -247,13 +249,13 @@ namespace TrackableEntity
         }
 
         /// <summary>
-        /// Вернуть все назад. Восстановить из оригинальной копии. entity.Property = original;
+        /// Вернуть все назад. Восстановить из оригинальной копии. baseEntity.Property = original;
         /// </summary>
         public void RejectChanges()
         {
             foreach (var entity in EntitySet.Keys.Where(x=>x.EntityState == EntityState.Modified || x.EntityState == EntityState.Deleted))
             {
-                EntitySet[entity].Entity.EntityState = EntityState.Unmodified;
+                EntitySet[entity].BaseEntity.EntityState = EntityState.Unmodified;
                 //пересохранение текущего значения у измененных свойств.
 
                 foreach (var propertyName in entity.ChangedProperties)

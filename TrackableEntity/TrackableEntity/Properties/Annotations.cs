@@ -381,7 +381,7 @@ namespace TrackableEntity.Annotations
   public enum ImplicitUseKindFlags
   {
     Default = Access | Assign | InstantiatedWithFixedConstructorSignature,
-    /// <summary>Only entity marked with attribute considered used.</summary>
+    /// <summary>Only baseEntity marked with attribute considered used.</summary>
     Access = 1,
     /// <summary>Indicates implicit assignment to a member.</summary>
     Assign = 2,
@@ -403,9 +403,9 @@ namespace TrackableEntity.Annotations
   {
     Default = Itself,
     Itself = 1,
-    /// <summary>Members of entity marked with attribute are considered used.</summary>
+    /// <summary>Members of baseEntity marked with attribute are considered used.</summary>
     Members = 2,
-    /// <summary>Entity marked with attribute and all its members considered used.</summary>
+    /// <summary>BaseEntity marked with attribute and all its members considered used.</summary>
     WithMembers = Itself | Members
   }
 
@@ -549,7 +549,7 @@ namespace TrackableEntity.Annotations
   /// Applying the attribute on a template method parameter:
   /// <code>
   /// [SourceTemplate]
-  /// public static void something(this Entity x, [Macro(Expression = "guid()", Editable = -1)] string newguid) {
+  /// public static void something(this BaseEntity x, [Macro(Expression = "guid()", Editable = -1)] string newguid) {
   ///   /*$ var $x$Id = "$newguid$" + x.ToString();
   ///   x.DoSomething($x$Id); */
   /// }

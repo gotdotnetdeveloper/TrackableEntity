@@ -5,14 +5,14 @@ using System.Reflection;
 namespace TrackableEntity
 {
     /// <summary>
-    /// Метаданные Entity
+    /// Метаданные BaseEntity
     /// </summary>
     public class EntityInfo
     {
         /// <summary>
         /// Ссылка на сущьность.
         /// </summary>
-        public Entity Entity { get; set; }
+        public BaseEntity BaseEntity { get; set; }
 
         /// <summary>
         /// Тип сущьности.

@@ -1,73 +1,55 @@
 ﻿using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using TrackableEntity.Annotations;
+using System.Linq;
 
 namespace TrackableEntity
 {
     /// <summary>
     /// Коллекция сущьностей.
     /// </summary>
-    public class EntityCollection : ObservableCollection<Entity> 
+    public class EntityCollection<TEntity> : ObservableCollection<BaseEntity> where TEntity : BaseEntity, new()
     {
-
         public EntityCollection()
         {
-            
-        }
-        public EntityCollection(Entity parent = null)
-        {
-            _parent = parent;
-        }
-        public EntityCollection( IEnumerable<Entity> EntityCollection, [CanBeNull] Entity parent = null):base(EntityCollection)
-        {
-            _parent = parent;
         }
 
+        public EntityCollection(EntityStateMonitor monitor)
+        {
+            EntityStateMonitor = monitor;
+        }
 
+        public EntityCollection(EntityStateMonitor monitor, IEnumerable<TEntity> items) : base(items)
+        {
+            EntityStateMonitor = monitor;
+        }
 
         /// <summary>
-        /// Родительская Entity
+        /// Ссылка на мониторинг
         /// </summary>
-        private readonly Entity _parent;
-
-        private EntityStateMonitor _entityStateMonitor;
+        public EntityStateMonitor EntityStateMonitor { get; set; }
 
         /// <summary>
-        /// Ленивая инициализация из parent
+        /// Удалить все сущьности из коллекции.
         /// </summary>
-        public EntityStateMonitor EntityStateMonitor
-        {
-            get
-            {
-                if (_entityStateMonitor == null)
-                {
-                    if (_parent != null)
-                    {
-                        _entityStateMonitor = _parent.EntityStateMonitor;
-                    }
-
-                    if (_entityStateMonitor == null)
-                    {
-                        _entityStateMonitor = new EntityStateMonitor();
-                    }
-                }
-
-                return _entityStateMonitor;
-            } 
-           
-        }
-
         protected override void ClearItems()
         {
-            foreach (var entity in Items)
+            if (EntityStateMonitor != null)
             {
-                if (_entityStateMonitor.EntitySet.ContainsKey(entity))
+                foreach (var entity in Items)
                 {
-                    if (_entityStateMonitor.EntitySet[entity].Entity.EntityState == EntityState.New)
-                        _entityStateMonitor.EntitySet.Remove(entity);
-                    else
+                    if (EntityStateMonitor.EntitySet.ContainsKey(entity))
                     {
-                        _entityStateMonitor.EntitySet[entity].Entity.EntityState = EntityState.Deleted;
+                        if (EntityStateMonitor.EntitySet[entity].BaseEntity.EntityState == EntityState.New)
+                        {
+                            EntityStateMonitor.EntitySet.Remove(entity);
+                            EntityStateMonitor.IsChanged = EntityStateMonitor.EntitySet.Keys.Any(x => x.EntityState != EntityState.Unmodified);
+                        }
+                            
+                        else
+                        {
+                            EntityStateMonitor.EntitySet[entity].BaseEntity.EntityState = EntityState.Deleted;
+                            EntityStateMonitor.IsChanged = true;
+                        }
                     }
                 }
             }
@@ -75,32 +57,84 @@ namespace TrackableEntity
             base.ClearItems();
         }
 
-        protected override void InsertItem(int index, Entity item)
+        /// <summary>
+        /// Вставить новую сущьность.
+        /// </summary>
+        /// <param name="index">Индекс.</param>
+        /// <param name="item">Сущьность.</param>
+        protected override void InsertItem(int index, BaseEntity item)
         {
-            
-            if (! _entityStateMonitor.EntitySet.ContainsKey(item))
+            if (EntityStateMonitor != null)
             {
-                item.EntityState = EntityState.New;
-                _entityStateMonitor.EntitySet.Add(item,null);
+                if (!EntityStateMonitor.EntitySet.ContainsKey(item))
+                {
+                    EntityStateMonitor.Aplay<TEntity>(item);
+                    item.EntityState = EntityState.New;
+
+                    EntityStateMonitor.IsChanged = true;
+                }
             }
 
-                base.InsertItem(index, item);
+            base.InsertItem(index, item);
         }
 
+
+        /// <summary>
+        /// Удалить элемент.
+        /// </summary>
+        /// <param name="index">Индекс элемента.</param>
         protected override void RemoveItem(int index)
         {
-            var item = this[index];
-            if (_entityStateMonitor.EntitySet.ContainsKey(item))
+            if (EntityStateMonitor != null)
             {
-                item.EntityState = EntityState.Deleted;
+                var entity = this[index];
+
+                if (EntityStateMonitor.EntitySet.ContainsKey(entity))
+                {
+                    if (EntityStateMonitor.EntitySet[entity].BaseEntity.EntityState == EntityState.New)
+                        EntityStateMonitor.EntitySet.Remove(entity);
+                    else
+                    {
+                        EntityStateMonitor.EntitySet[entity].BaseEntity.EntityState = EntityState.Deleted;
+                    }
+
+                    EntityStateMonitor.IsChanged = EntityStateMonitor.EntitySet.Keys.Any(x => x.EntityState != EntityState.Unmodified);
+                }
             }
+
             base.RemoveItem(index);
         }
 
-        protected override void SetItem(int index, Entity item)
+        /// <summary>
+        /// Заместить по индексу новым объектом.
+        /// </summary>
+        /// <param name="index">Индекс</param>
+        /// <param name="item">Элемент для вставки/реплайса</param>
+        protected override void SetItem(int index, BaseEntity item)
         {
+            if (EntityStateMonitor != null)
+            {
+                if (Items[index] is TEntity entity && !ReferenceEquals(item, entity))
+                {
+                    if (EntityStateMonitor.EntitySet.ContainsKey(entity))
+                    {
+                        EntityStateMonitor.EntitySet.Remove(entity);
+                        // TODO Диспоуз entity 
+                    }
+                }
+
+                if (!EntityStateMonitor.EntitySet.ContainsKey(item))
+                {
+                    EntityStateMonitor.Aplay<TEntity>(item);
+                    item.EntityState = EntityState.New;
+                }
+                    
+
+                EntityStateMonitor.IsChanged = EntityStateMonitor.EntitySet.Keys.Any(x => x.EntityState != EntityState.Unmodified);
+            }
+
             base.SetItem(index, item);
         }
-       
+
     }
 }
