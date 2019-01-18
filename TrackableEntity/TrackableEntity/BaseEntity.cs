@@ -17,7 +17,7 @@ namespace TrackableEntity
     /// <summary>
     /// Базовая сущьность.
     /// </summary>
-    public  class BaseEntity :  INotifyPropertyChanged, IEntity
+    public  class BaseEntity :  INotifyPropertyChanged, IEntity, IDisposable
     {
         /// <summary>
         /// Текущее состояние сущьности.
@@ -48,6 +48,10 @@ namespace TrackableEntity
 
 
         private EntityState _state;
+        /// <summary>
+        /// Признак вызова Dispose().
+        /// </summary>
+        protected bool _disposed;
 
         /// <summary>
         /// Получить значение свойства.
@@ -209,6 +213,42 @@ namespace TrackableEntity
         public virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+            // Так как вызов очистки произошел через IDisposable, 
+            // убирает объект из очереди финализации GC
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// Защищенный Dispose с возможностью перегрузки.
+        /// </summary>
+        /// <param name="disposing"> Признак вызова Dispose().</param>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (_disposed)
+                return;
+            if (disposing)
+            {
+               
+                try
+                {
+                    // Освобождение управляемых ресурсов тут.
+                    ((IEntity) this).CurrentProperties.Clear();
+                    ((IEntity) this).Monitor = null;
+                }
+                catch
+                {
+                    // ignored
+                }
+            }
+            // Освобождение НЕуправляемых ресурсов тут.
+            //
+
+            _disposed = true;
         }
     }
 }

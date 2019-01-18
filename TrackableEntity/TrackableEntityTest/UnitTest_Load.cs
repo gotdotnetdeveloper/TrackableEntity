@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using ChangeTracking;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using TrackableEntity;
@@ -38,17 +39,15 @@ namespace TrackableEntityTest
             Debug.Print($"init Milliseconds= {watch.ElapsedMilliseconds}");
             var Id = Guid.NewGuid();
             watch.Restart();
-           // var tmp = listAsTrackable.Where(x => x.Id == x.ParentId).OrderBy(x => x.Id).ToList();
-            foreach (var treeItemPoco in listAsTrackable)
-            {
-                treeItemPoco.Id = Id;
-            }
+            var tmp = listAsTrackable.Where(x => x.Id == x.ParentId).OrderBy(x => x.Id).ToList();
+            //foreach (var treeItemPoco in listAsTrackable)
+            //    treeItemPoco.Id = Id;
             watch.Stop();
             Debug.Print($"listAsTrackable Milliseconds= {watch.ElapsedMilliseconds}");
         }
        
         /// <summary>
-        /// Новый трекер.
+        /// 
         /// </summary>
         [TestMethod]
         public void TestMethod_BaseEntity()
@@ -73,12 +72,12 @@ namespace TrackableEntityTest
 
             var Id = Guid.NewGuid();
             watch.Restart();
-            //var tmp = list.Where(x => x.Id == x.ParentId).OrderBy(x => x.Id).ToList();
+            var tmp = list.Where(x => x.Id == x.ParentId).OrderBy(x => x.Id).ToList();
            
-            foreach (var treeItemBaseEntity in list)
-            {
-                treeItemBaseEntity.Id = Id;
-            }
+            //foreach (var treeItemBaseEntity in list)
+            //{
+            //    treeItemBaseEntity.Id = Id;
+            //}
             watch.Stop();
             Debug.Print($"EntityStateMonitor Milliseconds= {watch.ElapsedMilliseconds}");
         }

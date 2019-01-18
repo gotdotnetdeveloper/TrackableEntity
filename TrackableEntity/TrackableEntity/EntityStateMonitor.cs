@@ -12,20 +12,26 @@ namespace TrackableEntity
     /// Главная функция - отслеживание состояний у BaseEntity. Следить за IsChanged и выдача Add/remove/update коллекций.
     /// аналог Monitor в EntityFrameworkCore
     /// </summary>
-    public class EntityStateMonitor : IEntityStateMonitor
+    public class EntityStateMonitor : IEntityStateMonitor, IDisposable
     {
+        /// <summary>
+        /// Признак вызова Dispose().
+        /// </summary>
+        protected bool _disposed;
+        private bool _isChanged;
+
         /// <summary>
         /// Все отслеживаемые сущьности
         /// </summary>
         public readonly Dictionary<BaseEntity, EntityInfo> EntitySet = new Dictionary<BaseEntity, EntityInfo>(ReferenceEqualityComparer.Instance);
-
+        
         /// <summary>
         /// Закешированный справочник типов. (Чтоб рефлексии было поменьше)
         /// </summary>
         public readonly Dictionary<Type, PropertyInfo[]> PropertyInfoDictionary = new Dictionary<Type, PropertyInfo[]>();
 
-        private bool _isChanged;
-
+        
+            
         public ICollection<BaseEntity> GetAddedItems()
         {
            return EntitySet.Keys.Where(x => x.State == EntityState.New).ToList();
@@ -228,6 +234,42 @@ namespace TrackableEntity
             IsChanged = false;
         }
 
-       
+
+        public void Dispose()
+        {
+            Dispose(true);
+            // Так как вызов очистки произошел через IDisposable, 
+            // убирает объект из очереди финализации GC
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// Защищенный Dispose с возможностью перегрузки.
+        /// </summary>
+        /// <param name="disposing"> Признак вызова Dispose().</param>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (_disposed)
+                return;
+            if (disposing)
+            {
+
+                try
+                {
+                    // Освобождение управляемых ресурсов тут.
+                    EntitySet.Clear();
+                    PropertyInfoDictionary.Clear();
+                }
+                catch
+                {
+                    // ignored
+                }
+            }
+            // Освобождение НЕуправляемых ресурсов тут.
+            //
+
+            _disposed = true;
+        }
+
     }
 }
