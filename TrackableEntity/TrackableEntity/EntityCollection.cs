@@ -39,15 +39,15 @@ namespace TrackableEntity
                 {
                     if (EntityStateMonitor.EntitySet.ContainsKey(entity))
                     {
-                        if (EntityStateMonitor.EntitySet[entity].BaseEntity.EntityState == EntityState.New)
+                        if (EntityStateMonitor.EntitySet[entity].BaseEntity.State == EntityState.New)
                         {
                             EntityStateMonitor.EntitySet.Remove(entity);
-                            EntityStateMonitor.IsChanged = EntityStateMonitor.EntitySet.Keys.Any(x => x.EntityState != EntityState.Unmodified);
+                            EntityStateMonitor.IsChanged = EntityStateMonitor.EntitySet.Keys.Any(x => x.State != EntityState.Unmodified);
                         }
                             
                         else
                         {
-                            EntityStateMonitor.EntitySet[entity].BaseEntity.EntityState = EntityState.Deleted;
+                            EntityStateMonitor.EntitySet[entity].BaseEntity.State = EntityState.Deleted;
                             EntityStateMonitor.IsChanged = true;
                         }
                     }
@@ -69,7 +69,7 @@ namespace TrackableEntity
                 if (!EntityStateMonitor.EntitySet.ContainsKey(item))
                 {
                     EntityStateMonitor.Aplay<TEntity>(item);
-                    item.EntityState = EntityState.New;
+                    item.State = EntityState.New;
 
                     EntityStateMonitor.IsChanged = true;
                 }
@@ -91,14 +91,14 @@ namespace TrackableEntity
 
                 if (EntityStateMonitor.EntitySet.ContainsKey(entity))
                 {
-                    if (EntityStateMonitor.EntitySet[entity].BaseEntity.EntityState == EntityState.New)
+                    if (EntityStateMonitor.EntitySet[entity].BaseEntity.State == EntityState.New)
                         EntityStateMonitor.EntitySet.Remove(entity);
                     else
                     {
-                        EntityStateMonitor.EntitySet[entity].BaseEntity.EntityState = EntityState.Deleted;
+                        EntityStateMonitor.EntitySet[entity].BaseEntity.State = EntityState.Deleted;
                     }
 
-                    EntityStateMonitor.IsChanged = EntityStateMonitor.EntitySet.Keys.Any(x => x.EntityState != EntityState.Unmodified);
+                    EntityStateMonitor.IsChanged = EntityStateMonitor.EntitySet.Keys.Any(x => x.State != EntityState.Unmodified);
                 }
             }
 
@@ -126,11 +126,11 @@ namespace TrackableEntity
                 if (!EntityStateMonitor.EntitySet.ContainsKey(item))
                 {
                     EntityStateMonitor.Aplay<TEntity>(item);
-                    item.EntityState = EntityState.New;
+                    item.State = EntityState.New;
                 }
                     
 
-                EntityStateMonitor.IsChanged = EntityStateMonitor.EntitySet.Keys.Any(x => x.EntityState != EntityState.Unmodified);
+                EntityStateMonitor.IsChanged = EntityStateMonitor.EntitySet.Keys.Any(x => x.State != EntityState.Unmodified);
             }
 
             base.SetItem(index, item);

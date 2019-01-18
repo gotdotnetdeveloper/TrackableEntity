@@ -18,7 +18,7 @@ namespace TrackableEntityTest
             var entityCollection = new EntityCollection<User>(es);
 
             entityCollection.Add(user);
-            Assert.IsTrue(entityCollection[0].EntityState == EntityState.New);
+            Assert.IsTrue(entityCollection[0].State == EntityState.New);
 
             entityCollection[0] = new   User { Age = 1 };
             Assert.IsTrue(es.EntitySet[entityCollection[0]] != null  );

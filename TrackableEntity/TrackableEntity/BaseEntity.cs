@@ -8,20 +8,26 @@ using TrackableEntity.Annotations;
 
 namespace TrackableEntity
 {
+    public interface IEntity
+    {
+        EntityStateMonitor Monitor { get; set; }
+        Dictionary<String, Object> CurrentProperties { get; set; }
+    }
+
     /// <summary>
     /// Базовая сущьность.
     /// </summary>
-    public  class BaseEntity :  INotifyPropertyChanged
+    public  class BaseEntity :  INotifyPropertyChanged, IEntity
     {
         /// <summary>
         /// Текущее состояние сущьности.
         /// </summary>
-        public EntityState EntityState
+        public EntityState State
         {
-            get => _entityState;
+            get => _state;
             set
             {
-                _entityState = value;
+                _state = value;
                 OnPropertyChanged();
             } 
         }
@@ -33,15 +39,15 @@ namespace TrackableEntity
         /// <summary>
         /// Монитор отслеживанния.
         /// </summary>
-        public EntityStateMonitor EntityStateMonitor { get; set; }
+        EntityStateMonitor IEntity.Monitor { get; set; }
 
         /// <summary>
         /// Текущие значение свойств.
         /// </summary>
-      protected  Dictionary<String, Object> CurrentProperties { get; set; } = new Dictionary<String, Object>();
+        Dictionary<String, Object> IEntity.CurrentProperties { get; set; } = new Dictionary<String, Object>();
 
 
-        private EntityState _entityState;
+        private EntityState _state;
 
         /// <summary>
         /// Получить значение свойства.
@@ -51,14 +57,14 @@ namespace TrackableEntity
         /// <returns>Значение свойства</returns>
         protected T GetValue<T>([CallerMemberName] string propertyName = "")
         {
-            if (CurrentProperties.TryGetValue(propertyName, out var val))
+            if (((IEntity) this).CurrentProperties.TryGetValue(propertyName, out var val))
             {
                 return (T)val;
             }
             else
             {// еще не делали SetValue для параметра. Добавим дефолтное значение
-                CurrentProperties[propertyName] = default(T);
-                return (T) CurrentProperties[propertyName] ;
+                ((IEntity) this).CurrentProperties[propertyName] = default(T);
+                return (T) ((IEntity) this).CurrentProperties[propertyName] ;
             }
         }
 
@@ -67,9 +73,9 @@ namespace TrackableEntity
         /// </summary>
         protected virtual  void SetValue(Object value, [CallerMemberName] string propertyName = "")
         {
-            CurrentProperties[propertyName] = value;
+            ((IEntity) this).CurrentProperties[propertyName] = value;
 
-            if (EntityStateMonitor != null) // включено отслеживание
+            if (((IEntity) this).Monitor != null) // включено отслеживание
             {
                 OnSetValueInner(value, propertyName);
             }
@@ -167,13 +173,13 @@ namespace TrackableEntity
 
 
         /// <summary>
-        /// Обработка действий связанных с EntityStateMonitor
+        /// Обработка действий связанных с Monitor
         /// </summary>
         /// <param name="value">Значение set</param>
         /// <param name="propertyName"></param>
         private void OnSetValueInner(Object value,  string propertyName )
         {
-            var newEqualOriginal = AreEqualsToOriginal(EntityStateMonitor.EntitySet[this].OriginalValues[propertyName] , value);
+            var newEqualOriginal = AreEqualsToOriginal(((IEntity) this).Monitor.EntitySet[this].OriginalValues[propertyName] , value);
 
             if (newEqualOriginal)
             {
@@ -182,8 +188,8 @@ namespace TrackableEntity
 
                 if (!ChangedProperties.Any())
                 {
-                    EntityState = EntityState.Unmodified;
-                    EntityStateMonitor.IsChanged = EntityStateMonitor.EntitySet.Keys.Any(x => x.EntityState != EntityState.Unmodified);
+                    State = EntityState.Unmodified;
+                    ((IEntity) this).Monitor.IsChanged = ((IEntity) this).Monitor.EntitySet.Keys.Any(x => x.State != EntityState.Unmodified);
                 }
             }
             else
@@ -191,9 +197,9 @@ namespace TrackableEntity
                 if (!ChangedProperties.Contains(propertyName))
                 ChangedProperties.Add(propertyName);
 
-                EntityState = EntityState.Modified;
+                State = EntityState.Modified;
                 //Сигнализируем, что есть изменения
-                EntityStateMonitor.IsChanged = true;
+                ((IEntity) this).Monitor.IsChanged = true;
             }
         }
         

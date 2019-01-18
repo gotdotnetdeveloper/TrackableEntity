@@ -10,7 +10,7 @@ namespace TrackableEntity
 {
     /// <summary>
     /// Главная функция - отслеживание состояний у BaseEntity. Следить за IsChanged и выдача Add/remove/update коллекций.
-    /// аналог EntityStateMonitor в EntityFrameworkCore
+    /// аналог Monitor в EntityFrameworkCore
     /// </summary>
     public class EntityStateMonitor : IEntityStateMonitor
     {
@@ -28,17 +28,17 @@ namespace TrackableEntity
 
         public ICollection<BaseEntity> GetAddedItems()
         {
-           return EntitySet.Keys.Where(x => x.EntityState == EntityState.New).ToList();
+           return EntitySet.Keys.Where(x => x.State == EntityState.New).ToList();
         }
 
         public ICollection<BaseEntity> GetChangedItems()
         {
-            return EntitySet.Keys.Where(x => x.EntityState == EntityState.Modified).ToList();
+            return EntitySet.Keys.Where(x => x.State == EntityState.Modified).ToList();
         }
 
         public ICollection<BaseEntity> GetDeletedItems()
         {
-            return EntitySet.Keys.Where(x => x.EntityState == EntityState.Deleted).ToList();
+            return EntitySet.Keys.Where(x => x.State == EntityState.Deleted).ToList();
         }
 
         /// <summary>
@@ -125,51 +125,9 @@ namespace TrackableEntity
                 }
                 
             }
-            baseEntity.EntityState = EntityState.Unmodified;
-            baseEntity.EntityStateMonitor = this;
+            baseEntity.State = EntityState.Unmodified;
+            ((IEntity) baseEntity).Monitor = this;
             EntitySet.Add(baseEntity, ei);
-        }
-
-        /// <summary>
-        /// По PropertyInfo получить описание сохраненного значения.
-        /// </summary>
-        /// <param name="pi"></param>
-        /// <param name="baseEntity"></param>
-        /// <returns></returns>
-        private OriginalValueInfo GetOriginalValueInfoBy(PropertyInfo pi, BaseEntity baseEntity)
-        {
-            //если этот тип значений или это строка, то копируем значения
-            if (pi.PropertyType.IsValueType || pi.PropertyType == typeof(string))
-            {
-                var p = new OriginalValueInfo
-                {
-                    PropertyInfo = pi,
-                    Value = pi.GetMethod.Invoke(baseEntity, null)
-                };
-                return p;
-            }
-            else
-            {
-                var referense = pi.GetMethod.Invoke(baseEntity, null);
-                if (referense is ICloneable cloneable)
-                {
-                    var p = new OriginalValueInfo
-                    {
-                        PropertyInfo = pi,
-                        Value = cloneable.Clone()
-                    };
-                    return p;
-                }
-                else
-                {
-                    //var bytes = Serializer.Deserialize()
-                    // var mc2 = ZeroFormatterSerializer.Deserialize<MyClass>(bytes);
-                    //https://stackoverflow.com/questions/4667981/c-sharp-use-system-type-as-generic-parameter
-                    //var mc2 = ZeroFormatterSerializer.Deserialize(bytes)
-                    // throw new NotImplementedException("TODO: Клонируем значение сериализацией");
-                }
-            }
-            return null;
         }
 
         /// <summary>
@@ -229,9 +187,9 @@ namespace TrackableEntity
         /// </summary>
         public void AcceptChanges()
         {
-            foreach (var entity in EntitySet.Keys.Where(x => x.EntityState != EntityState.Unmodified))
+            foreach (var entity in EntitySet.Keys.Where(x => x.State != EntityState.Unmodified))
             {
-                EntitySet[entity].BaseEntity.EntityState = EntityState.Unmodified;
+                EntitySet[entity].BaseEntity.State = EntityState.Unmodified;
                 //пересохранение Original значения. Только для измененных.
 
                 foreach (var propertyName in entity.ChangedProperties)
@@ -253,18 +211,18 @@ namespace TrackableEntity
         /// </summary>
         public void RejectChanges()
         {
-            foreach (var entity in EntitySet.Keys.Where(x=>x.EntityState == EntityState.Modified || x.EntityState == EntityState.Deleted))
+            foreach (var entity in EntitySet.Keys.Where(x=>x.State == EntityState.Modified || x.State == EntityState.Deleted))
             {
-                EntitySet[entity].BaseEntity.EntityState = EntityState.Unmodified;
+                EntitySet[entity].BaseEntity.State = EntityState.Unmodified;
                 //пересохранение текущего значения у измененных свойств.
 
                 foreach (var propertyName in entity.ChangedProperties)
                 {
                     var originalValueInfo = EntitySet[entity].OriginalValues[propertyName];
-                    var monitor = entity.EntityStateMonitor;
-                    entity.EntityStateMonitor = null; //уберем ссылку на монитор на момент сета в проперти. что бы не обрабатывалось сравнение.
+                    var monitor = ((IEntity) entity).Monitor;
+                    ((IEntity) entity).Monitor = null; //уберем ссылку на монитор на момент сета в проперти. что бы не обрабатывалось сравнение.
                     originalValueInfo.PropertyInfo.SetMethod.Invoke(entity, new[] { originalValueInfo.Value });
-                    entity.EntityStateMonitor = monitor;
+                    ((IEntity) entity).Monitor = monitor;
                 }
             }
             IsChanged = false;
