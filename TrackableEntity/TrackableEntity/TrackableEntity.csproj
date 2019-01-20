@@ -48,6 +48,7 @@
     <Compile Include="EntityInfo.cs" />
     <Compile Include="EntityState.cs" />
     <Compile Include="EntityStateMonitor.cs" />
+    <Compile Include="IEntity.cs" />
     <Compile Include="IEntityStateMonitor.cs" />
     <Compile Include="Properties\Annotations.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

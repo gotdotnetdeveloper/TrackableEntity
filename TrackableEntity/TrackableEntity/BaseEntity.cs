@@ -8,12 +8,6 @@ using TrackableEntity.Annotations;
 
 namespace TrackableEntity
 {
-    public interface IEntity
-    {
-        EntityStateMonitor Monitor { get; set; }
-        Dictionary<String, Object> CurrentProperties { get; set; }
-    }
-
     /// <summary>
     /// Базовая сущьность.
     /// </summary>

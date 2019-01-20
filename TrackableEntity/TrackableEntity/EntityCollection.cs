@@ -9,15 +9,22 @@ namespace TrackableEntity
     /// </summary>
     public class EntityCollection<TEntity> : ObservableCollection<BaseEntity> where TEntity : BaseEntity, new()
     {
+        /// <summary>
+        /// Пустой конструктор.
+        /// </summary>
         public EntityCollection()
         {
         }
-
+        /// <summary>
+        /// Конструктор.
+        /// </summary>
         public EntityCollection(EntityStateMonitor monitor)
         {
             EntityStateMonitor = monitor;
         }
-
+        /// <summary>
+        /// Конструктор.
+        /// </summary>
         public EntityCollection(EntityStateMonitor monitor, IEnumerable<TEntity> items) : base(items)
         {
             EntityStateMonitor = monitor;
@@ -42,6 +49,7 @@ namespace TrackableEntity
                         if (EntityStateMonitor.EntitySet[entity].BaseEntity.State == EntityState.New)
                         {
                             EntityStateMonitor.EntitySet.Remove(entity);
+                            entity.Dispose();
                             EntityStateMonitor.IsChanged = EntityStateMonitor.EntitySet.Keys.Any(x => x.State != EntityState.Unmodified);
                         }
                             
@@ -92,7 +100,11 @@ namespace TrackableEntity
                 if (EntityStateMonitor.EntitySet.ContainsKey(entity))
                 {
                     if (EntityStateMonitor.EntitySet[entity].BaseEntity.State == EntityState.New)
+                    {
                         EntityStateMonitor.EntitySet.Remove(entity);
+                        entity.Dispose();
+                    }
+                        
                     else
                     {
                         EntityStateMonitor.EntitySet[entity].BaseEntity.State = EntityState.Deleted;
@@ -119,7 +131,7 @@ namespace TrackableEntity
                     if (EntityStateMonitor.EntitySet.ContainsKey(entity))
                     {
                         EntityStateMonitor.EntitySet.Remove(entity);
-                        // TODO Диспоуз entity 
+                        entity.Dispose();
                     }
                 }
 

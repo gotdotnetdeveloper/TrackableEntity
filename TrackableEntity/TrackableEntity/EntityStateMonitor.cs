@@ -18,30 +18,46 @@ namespace TrackableEntity
         /// Признак вызова Dispose().
         /// </summary>
         protected bool _disposed;
+        /// <summary>
+        /// Есть ли изменения.
+        /// </summary>
         private bool _isChanged;
+        /// <summary>
+        /// Имена свойств, которые не требуется отслеживать.
+        /// </summary>
+        private static readonly string[] ExceptPropertyNames = new[] { "EntityStateMonitor", "ChangedProperties", "CurrentProperties", "EntityState" };
 
         /// <summary>
-        /// Все отслеживаемые сущьности
+        /// Хранилище отслеживаемых сущьностей.
         /// </summary>
         public readonly Dictionary<BaseEntity, EntityInfo> EntitySet = new Dictionary<BaseEntity, EntityInfo>(ReferenceEqualityComparer.Instance);
         
         /// <summary>
-        /// Закешированный справочник типов. (Чтоб рефлексии было поменьше)
+        /// Закешированный справочник типов. (Чтоб рефлексии вызывалось меньше)
         /// </summary>
         public readonly Dictionary<Type, PropertyInfo[]> PropertyInfoDictionary = new Dictionary<Type, PropertyInfo[]>();
 
-        
-            
+
+        /// <summary>
+        /// Список ВСЕХ  сущьностей добавленных.
+        /// </summary>
+        /// <returns></returns>
         public ICollection<BaseEntity> GetAddedItems()
         {
            return EntitySet.Keys.Where(x => x.State == EntityState.New).ToList();
         }
-
+        /// <summary>
+        /// Список ВСЕХ сущьностей измененных.
+        /// </summary>
+        /// <returns></returns>
         public ICollection<BaseEntity> GetChangedItems()
         {
             return EntitySet.Keys.Where(x => x.State == EntityState.Modified).ToList();
         }
-
+        /// <summary>
+        /// Список ВСЕХ сущьностей удаленных.
+        /// </summary>
+        /// <returns></returns>
         public ICollection<BaseEntity> GetDeletedItems()
         {
             return EntitySet.Keys.Where(x => x.State == EntityState.Deleted).ToList();
@@ -63,7 +79,6 @@ namespace TrackableEntity
             } 
         }
 
-
         /// <summary>
         /// Добавить сущьности в контейнер для отслеживания. Откопировать свойства. Закешировать тип свойств.
         /// </summary>
@@ -78,6 +93,7 @@ namespace TrackableEntity
                 AplayInner(entity, type);
             }
         }
+
         /// <summary>
         /// Убедимся, что тип создан Reflection в кеше для ускорения.
         /// </summary>
@@ -88,10 +104,7 @@ namespace TrackableEntity
             {
                 PropertyInfoDictionary[type] = type.GetProperties()
                     .Where(x => x.CanWrite && x.CanRead
-                                           && x.Name != nameof(EntityStateMonitor)
-                                           && x.Name != "ChangedProperties"
-                                           && x.Name != "CurrentProperties"
-                                           && x.Name != nameof(EntityState)).ToArray();
+                                           && !ExceptPropertyNames.Contains(x.Name)).ToArray();
             }
         }
         /// <summary>
