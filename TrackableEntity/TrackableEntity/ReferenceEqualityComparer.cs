@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
 namespace TrackableEntity
@@ -6,6 +7,7 @@ namespace TrackableEntity
     /// <summary>
     /// Сравнение уникальности по ссылкам в памяти (Reference).
     /// </summary>
+    [Serializable]
     public sealed class ReferenceEqualityComparer : IEqualityComparer<object>
     {
         /// <summary>
@@ -15,10 +17,13 @@ namespace TrackableEntity
         {
         }
 
+        #region Публичные свойства
         /// <summary>
         /// статический Экземпляр.
         /// </summary>
         public static ReferenceEqualityComparer Instance { get; } = new ReferenceEqualityComparer();
+        #endregion
+        #region Приватные функции
         /// <summary>
         /// Сравнение по ссылкам.
         /// </summary>
@@ -33,5 +38,6 @@ namespace TrackableEntity
         /// <param name="obj">Объект у которого получаем Хеш-код</param>
         /// <returns>уникальный для экземпляра Хеш-код</returns>
         int IEqualityComparer<object>.GetHashCode(object obj) => RuntimeHelpers.GetHashCode(obj);
+        #endregion
     }
 }

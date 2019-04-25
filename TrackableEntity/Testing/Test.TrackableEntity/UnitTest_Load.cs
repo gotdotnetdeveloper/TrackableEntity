@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using ChangeTracking;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using TrackableEntity;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace TrackableEntityTest
 {
@@ -66,7 +66,7 @@ namespace TrackableEntityTest
 
             var watch = Stopwatch.StartNew();
             var es = new EntityStateMonitor();
-            es.Aplay<TreeItemBaseEntity>(list);
+            es.Apply(list);
             watch.Stop();
             Debug.Print($"init Milliseconds= {watch.ElapsedMilliseconds}");
 
@@ -84,6 +84,42 @@ namespace TrackableEntityTest
 
 
 
+        [TestMethod]
+        public void TestMethod_BaseEntity_AsTrackable()
+        {
+            int count = 0;
+            int maxCount = 1;
+            var list = new List<TreeItemBaseEntity>(maxCount);
+            do
+            {
+                var newItem = new TreeItemBaseEntity();
+                newItem.Id = Guid.NewGuid();
+                newItem.ParentId = Guid.NewGuid();
+                list.Add(newItem);
+                count++;
+            } while (count < maxCount);
+
+            var watch = Stopwatch.StartNew();
+
+            try
+            {
+                var tr = list.AsTrackable();
+
+                tr[0].Name = "dsds";
+
+                var isChanged = tr.CastToIChangeTrackableCollection().IsChanged;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                throw;
+            }
+            
+
+            watch.Stop();
+            Debug.Print($"EntityStateMonitor Milliseconds= {watch.ElapsedMilliseconds}");
+        }
+
     }
     public class TreeItemBaseEntity : BaseEntity
     {
@@ -98,7 +134,11 @@ namespace TrackableEntityTest
             set => SetValue(value);
         }
 
-        public virtual string Name { get; set; }
+        public virtual string Name
+        {
+            get => GetValue<string>();
+            set => SetValue(value);
+        }
     }
 
     public class TreeItemPOCO 

@@ -2,14 +2,12 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using TrackableEntity;
 
 namespace ConsoleРerformanceTest
 {
     /// <summary>
-    /// Для анализа производительности.
+    /// Для анализа производительности Equals.
     /// </summary>
     class Program
     {
@@ -63,7 +61,7 @@ namespace ConsoleРerformanceTest
 
             var watch = Stopwatch.StartNew();
             var es = new EntityStateMonitor();
-            es.Aplay<TreeItemBaseEntity>(list);
+            es.Apply(list);
             watch.Stop();
             Console.WriteLine($"init Milliseconds= {watch.ElapsedMilliseconds}");
 

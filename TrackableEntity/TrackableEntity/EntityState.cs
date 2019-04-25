@@ -1,10 +1,14 @@
 ﻿namespace TrackableEntity
 {
+    /// <summary>
+    /// Состояние сущьности в данный момент.
+    /// </summary>
     public enum EntityState
     {
         /// <summary>
+        /// Не трекаемая, отсоедененная сущьность.
         /// </summary>
-        None = 0,
+        Detached = 0,
 
         /// <summary>
         /// Не менялась
